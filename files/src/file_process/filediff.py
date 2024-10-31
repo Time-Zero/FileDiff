@@ -1,5 +1,5 @@
 import os.path
-
+from datasketch import MinHash, MinHashLSH
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import difflib
@@ -14,7 +14,8 @@ def calculate_similarity(base_file, compare_file):
     vectorizer = TfidfVectorizer().fit_transform([base_file, compare_file])
     vectors = vectorizer.toarray()
     cosine_similarities = cosine_similarity([vectors[0]], [vectors[1]])[0][0]
-    return cosine_similarities
+    return cosine_similarities * 100
+
 
 def generate_diff_html_file(base_file_name, compare_file_name, base_file_content, compare_file_content):
     """
@@ -32,3 +33,9 @@ def generate_diff_html_file(base_file_name, compare_file_name, base_file_content
     out_file = 'compare_{}_{}.html'.format(file_1_name, file_2_name)
     with open(out_file, 'w') as f:
         f.write(res)
+
+
+# def calculate_binary_similarity(base_file_content, compare_file_content):
+#     seq_matcher = difflib.SequenceMatcher(None, base_file_content, compare_file_content)
+#     similarity = seq_matcher.quick_ratio() * 100
+#     return similarity
