@@ -1,5 +1,3 @@
-import os.path
-from datasketch import MinHash, MinHashLSH
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import difflib
@@ -24,18 +22,8 @@ def generate_diff_html_file(base_file_name, compare_file_name, base_file_content
     :param compare_file_name: 待比较文件名
     :param base_file_content: 基准文件内容
     :param compare_file_content: 待比较文件内容
-    :return:
+    :return: 返回文件差异内容
     """
     compare = difflib.HtmlDiff()
     res  = compare.make_file(base_file_content,compare_file_content)
-    file_1_name = os.path.basename(base_file_name).split('.')[0]
-    file_2_name = os.path.basename(compare_file_name).split('.')[0]
-    out_file = 'compare_{}_{}.html'.format(file_1_name, file_2_name)
-    with open(out_file, 'w') as f:
-        f.write(res)
-
-
-# def calculate_binary_similarity(base_file_content, compare_file_content):
-#     seq_matcher = difflib.SequenceMatcher(None, base_file_content, compare_file_content)
-#     similarity = seq_matcher.quick_ratio() * 100
-#     return similarity
+    return res

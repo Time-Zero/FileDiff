@@ -1,7 +1,7 @@
 import os
+from src.file_process.filediff import calculate_similarity
+from src.file_process.fileread import *
 
-from files.src.file_process.filediff import calculate_similarity
-from files.src.file_process.fileread import *
 
 def get_target_files(dirpath):
     """
@@ -17,7 +17,9 @@ def get_target_files(dirpath):
         for filename in files:
             file_base_name, file_type = os.path.splitext(filename)
             if file_type in target_type:
-                file_list.append(os.path.join(home, filename))
+                raw_path = os.path.join(home, filename)
+                standard_path = os.path.normpath(raw_path)
+                file_list.append(standard_path)
     return file_list
 
 def match_type_and_function(base_file, compare_file):
@@ -27,21 +29,29 @@ def match_type_and_function(base_file, compare_file):
     :param compare_file: 待比较文件
     :return: {base_file, compare_file, similarities}
     """
+    base_file_content = None
+    compare_file_content = None
+    similarities = -1
 
     file_base_name, file_type = os.path.splitext(base_file)
     base_file_type = file_type
     if base_file_type == '.docx':
         base_file_content = read_docx(base_file)
-    else:
+    elif base_file_type == '.pdf':
         base_file_content = read_pdf(base_file)
+    elif base_file_type == '.doc':
+        base_file_content = read_doc(base_file)
 
     file_base_name, file_type = os.path.splitext(compare_file)
     compare_file_type = file_type
     if compare_file_type == '.docx':
         compare_file_content = read_docx(compare_file)
-    else:
+    elif compare_file_type == '.pdf':
         compare_file_content = read_pdf(compare_file)
+    elif compare_file_type == '.doc':
+        compare_file_content = read_doc(compare_file)
 
-    similarities = calculate_similarity(base_file_content, compare_file_content)
+    if base_file_content is not None and compare_file_content is not None:
+        similarities = calculate_similarity(base_file_content, compare_file_content)
     return similarities
 
