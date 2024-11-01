@@ -6,7 +6,7 @@ import difflib
 
 def calculate_similarity(base_file, compare_file):
     """
-    输入两个文件，返回这个两个文件的相似度
+    输入两个文件内容，返回这个两个文件的相似度
     :param base_file: 基准文件
     :param compare_file: 要比较的文件
     :return: 两个文件的精准度
