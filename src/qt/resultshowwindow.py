@@ -42,30 +42,6 @@ class ResultShowWindow(QWidget):
         # 设置这个base_widget的layout为显示结果的layout
         self.result_table_base_widget.setLayout(self.result_table_layout)
 
-        # # webengine
-        # self.html_show_widget = QWebEngineView()
-        # # 整个webengine显示部分，也就是右边的layout
-        # self.html_show_layout = QVBoxLayout()
-        # # 插入webengine
-        # self.html_show_layout.addWidget(self.html_show_widget)
-        # # 显示存储地点的lineedit
-        # self.html_save_place_lineedit = QLineEdit()
-        # self.html_show_layout.addWidget(self.html_save_place_lineedit)
-        # self.html_save_place_select_button = QPushButton('选择保存地址')
-        # self.html_save_confirm_button = QPushButton('确认')
-        # # 存储上面两个功能键的layout
-        # self.html_func_layout = QHBoxLayout()
-        # # 把两个功能键插入layout中
-        # self.html_func_layout.addWidget(self.html_save_place_select_button)
-        # self.html_func_layout.addWidget(self.html_save_confirm_button)
-        # # 用于存放上面的layout
-        # self.html_func_widget = QWidget()
-        # self.html_func_widget.setMaximumHeight(45)
-        # self.html_func_widget.setLayout(self.html_func_layout)
-        # self.html_show_layout.addWidget(self.html_func_widget)
-        # self.html_show_base_widget = QWidget()
-        # self.html_show_base_widget.setLayout(self.html_show_layout)
-
         self.result_show_window_layout = QHBoxLayout()
         self.result_show_window_layout.addWidget(self.result_table_base_widget)
         # self.result_show_window_layout.addWidget(self.html_show_base_widget)

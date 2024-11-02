@@ -1,5 +1,4 @@
-from threading import Lock, Thread
-
+from threading import Thread
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, \
     QStackedWidget
@@ -8,28 +7,28 @@ from src.qt.boxstyleprogressbar import *
 from src.qt.resultshowwindow import *
 from src.file_process.fileread import *
 
+file_list = []              # 待处理的文件列表
+result_list = []
+file_list_lock = Lock()     # 多线程锁,防止文件列表这里不同步
+result_list_lock = Lock()
+all_task_count = 0          # 总共要处理的任务列表 (n * (n-1)) / 2 个
+complete_task_count = 0
+
 class MainWindow(QWidget):
-    end_signal = pyqtSignal()
+    process_end_signal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.widget_2 = None
         self.widget_1 = None
         self.progress_bar = None
         self.stack_widget = None
-        self.confirm_pushbutton = None  # 确认操作按钮
-        self.select_file_dir_pushbutton = None      # 文件选择按钮
-        self.file_path_lineedit = None  # 文件路径显示
-        self.file_dir_path = None       # 要进行比对的文件夹路径
-        self.compare_result = []      # 比对结果
-        self.file_list = None           # 待处理文件列表
-        self.task_count = 0             # 任务总数
-        self.complete_task_count = 0    # 完成的任务数
-        self.file_list_lock = Lock()
-        self.compare_result_lock = Lock()
-        self.result_show_window = ResultShowWindow(self)        # 结果显示窗口
+        self.confirm_pushbutton = None                   # 确认操作按钮
+        self.select_file_dir_pushbutton = None           # 文件选择按钮
+        self.file_path_lineedit = None                  # 文件路径显示
+        self.result_show_window = ResultShowWindow()        # 结果显示窗口
         self.init_ui()
-        self.end_signal.connect(self.show_result)
-
+        self.process_end_signal.connect(self.show_result)
 
     def init_ui(self):
         self.setWindowTitle('FileCompare')
@@ -76,9 +75,9 @@ class MainWindow(QWidget):
 
         # 按钮
         self.select_file_dir_pushbutton = QPushButton('选择文件夹')
-        self.select_file_dir_pushbutton.clicked.connect(self.get_file_dir_path)
+        self.select_file_dir_pushbutton.clicked.connect(self.select_file_dir_pushbutton_slot)
         self.confirm_pushbutton = QPushButton('确认')
-        self.confirm_pushbutton.clicked.connect(self.process_file)
+        self.confirm_pushbutton.clicked.connect(self.confirm_pushbutton_slot)
         file_func_layout = QHBoxLayout()
         file_func_layout.addWidget(self.select_file_dir_pushbutton)
         file_func_layout.addWidget(self.confirm_pushbutton)
@@ -111,85 +110,92 @@ class MainWindow(QWidget):
         self.setLayout(base_widget_layout)
         self.stack_widget.setCurrentIndex(0)
 
-    def get_file_dir_path(self):
+
+    def select_file_dir_pushbutton_slot(self):
         """
-        选择目标文件夹
+        文件夹选择按钮槽函数
         :return:
         """
-        file_dir_path = QFileDialog.getExistingDirectory(self)
-        self.file_path_lineedit.setText(file_dir_path)
-        self.file_dir_path = file_dir_path
 
-        # 如果重新选择文件，则将其他部分重置状态
-        self.complete_task_count = 0
-        self.task_count = 0
-        # 排除第一次使用时file_list还是None的情况
-        if type(self.file_list) == list :
-            self.file_list.clear()
-        self.compare_result.clear()
+        dir_path = QFileDialog.getExistingDirectory()
+        self.file_path_lineedit.setText(dir_path)
 
-    def compare_file(self):
-        while True :
-            self.file_list_lock.acquire_lock()
 
-            # 如果文件列表被处理完成，则释放锁并且返回
-            if len(self.file_list) == 0:
-                self.file_list_lock.release()
-                self.end_signal.emit()
+
+    def confirm_pushbutton_slot(self):
+        """
+        confirm_pushbutton的槽函数
+        :return:
+        """
+        dir_path = self.file_path_lineedit.text()
+        # 如果路径为空
+        if len(dir_path) == 0:
+            QMessageBox.critical(self, 'Error', '文件夹路径不能为空')
+            return
+
+        # 获取待处理文件列表
+        global file_list
+        file_list = get_target_files(dir_path)
+
+        # 如果待处理文件数量是0
+        file_list_len = len(file_list)
+        if file_list_len == 0:
+            QMessageBox.information(self,'提示','没有检测到目标文件')
+            return
+
+        QMessageBox.information(self,'提示',f'检测到{file_list_len}个文件，点击确认开始比对')
+        global all_task_count
+        all_task_count = (file_list_len * (file_list_len - 1)) / 2
+
+        # 切换到进度条页面
+        self.stack_widget.setCurrentIndex(1)
+
+        # 起多个线程,并且采用分离线程
+        for i in range(6):
+            thread = Thread(target = self.process_action)
+            thread.daemon = True
+            thread.start()
+
+    def process_action(self):
+        """
+        多线程中的任务
+        :return:
+        """
+        global file_list_lock
+        global complete_task_count
+        global result_list_lock
+        global result_list
+        global file_list_lock
+
+        while True:
+            file_list_lock.acquire()
+
+            # 如果所有文件已经处理完成
+            if len(file_list) == 0:
+                file_list_lock.release()
                 break
 
-            base_file = self.file_list.pop()
-            current_file_list = self.file_list.copy()
-            self.file_list_lock.release()
+            file_1 = file_list.pop()
+            compare_files = file_list.copy()
+            file_list_lock.release()
 
-            for compare_file in current_file_list:
-                result = match_type_and_function(base_file, compare_file)
-                self.compare_result_lock.acquire()
-                self.complete_task_count += 1
-                self.compare_result.append([base_file, compare_file, result])
-                self.compare_result_lock.release()
-                self.progress_bar.setValue(int((self.complete_task_count / self.task_count) * 100))
+            for file_2 in compare_files:
+                result = match_type_and_function(file_1, file_2)
+                result_list_lock.acquire()
+                result_list.append([file_1, file_2, result])
+                complete_task_count += 1
+                self.progress_bar.setValue(int(complete_task_count / all_task_count * 100))
+                result_list_lock.release()
 
-    def process_file(self):
-        """
-        确认按钮的槽函数
-        :return:
-        """
-        if self.file_dir_path is None or len(self.file_dir_path) == 0:
-            QMessageBox.critical(self,'Error','文件夹路径不能为空')
-            return
-
-        file_list = get_target_files(self.file_dir_path)
-        # for file in file_list:
-        #     print(file)
-
-        self.file_list = file_list
-        file_list_len = len(self.file_list)
-        if file_list_len == 0:
-            QMessageBox.information(self,'提示','没有文件需要比对')
-            return
-        else:
-            QMessageBox.information(self,'提示',f'共检测到文件{file_list_len}个，点击确认开始检查')
-            self.stack_widget.setCurrentIndex(1)
-            self.task_count = (file_list_len * (file_list_len - 1)) / 2
-            all_task = []
-
-            # print("=====start=====")
-            for i in range(6):
-                thread = Thread(target=self.compare_file)
-                thread.daemon = True
-                thread.start()
-                all_task.append(thread)
-
-            # for thread in all_task:
-            #     thread.setDaemon(True)
-            # print("=====end=====")
-
+        # 最后一个处理完成并退出的线程先把数据排一下序，然后发送任务完成信号
+        if complete_task_count == all_task_count:
+            result_list.sort(key= lambda x : x[2], reverse=True)
+            self.process_end_signal.emit()
 
     def show_result(self):
         # 显示结果窗口
-        self.compare_result.sort(key=lambda x: x[2], reverse=True)
-        for result in self.compare_result:
+        global result_list
+        for result in result_list:
             self.result_show_window.add_row(result[0], result[1], result[2])
         self.result_show_window.show()
         self.hide()

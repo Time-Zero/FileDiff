@@ -31,6 +31,11 @@ def read_pdf(filename):
 word = None
 doc_read_lock = Lock()
 def read_doc(file_path):
+    """
+    读取doc文件，依赖微软的word，通过Microsoft的Word来打开doc文件并且读取内容
+    :param file_path:
+    :return:
+    """
     global word
     global doc_read_lock
     doc_read_lock.acquire()
@@ -43,12 +48,3 @@ def read_doc(file_path):
     doc.Close()
     doc_read_lock.release()
     return content
-
-def close_word():
-    """
-    关闭word
-    :return:
-    """
-    global word
-    if word is not None:
-        word.Close()
