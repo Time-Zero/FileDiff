@@ -4,7 +4,6 @@ from pdfminer.high_level import extract_text
 from win32com.client import Dispatch
 from threading import Lock
 
-# doc_read_lock = Lock()
 
 def read_docx(filename):
     """
@@ -44,3 +43,12 @@ def read_doc(file_path):
     doc.Close()
     doc_read_lock.release()
     return content
+
+def close_word():
+    """
+    关闭word
+    :return:
+    """
+    global word
+    if word is not None:
+        word.Close()

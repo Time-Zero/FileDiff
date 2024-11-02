@@ -1,11 +1,15 @@
 from threading import Lock, Thread
+
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, \
     QStackedWidget
 from src.utils.util import *
 from src.qt.boxstyleprogressbar import *
 from src.qt.resultshowwindow import *
+from src.file_process.fileread import *
 
 class MainWindow(QWidget):
+    end_signal = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.widget_2 = None
@@ -24,6 +28,8 @@ class MainWindow(QWidget):
         self.compare_result_lock = Lock()
         self.result_show_window = ResultShowWindow(self)        # 结果显示窗口
         self.init_ui()
+        self.end_signal.connect(self.show_result)
+
 
     def init_ui(self):
         self.setWindowTitle('FileCompare')
@@ -129,6 +135,7 @@ class MainWindow(QWidget):
             # 如果文件列表被处理完成，则释放锁并且返回
             if len(self.file_list) == 0:
                 self.file_list_lock.release()
+                self.end_signal.emit()
                 break
 
             base_file = self.file_list.pop()
@@ -153,8 +160,8 @@ class MainWindow(QWidget):
             return
 
         file_list = get_target_files(self.file_dir_path)
-        for file in file_list:
-            print(file)
+        # for file in file_list:
+        #     print(file)
 
         self.file_list = file_list
         file_list_len = len(self.file_list)
@@ -163,24 +170,26 @@ class MainWindow(QWidget):
             return
         else:
             QMessageBox.information(self,'提示',f'共检测到文件{file_list_len}个，点击确认开始检查')
-            # Thread(target=lambda : self.stack_widget.setCurrentIndex(1) ).start()
             self.stack_widget.setCurrentIndex(1)
             self.task_count = (file_list_len * (file_list_len - 1)) / 2
             all_task = []
 
-            print("=====start=====")
-            for i in range(8):
+            # print("=====start=====")
+            for i in range(6):
                 thread = Thread(target=self.compare_file)
+                thread.daemon = True
                 thread.start()
                 all_task.append(thread)
 
-            for thread in all_task:
-                thread.join()
-            print("=====end=====")
+            # for thread in all_task:
+            #     thread.setDaemon(True)
+            # print("=====end=====")
 
-            # 显示结果窗口
-            self.compare_result.sort(key=lambda x: x[2],reverse=True)
-            for result in self.compare_result:
-                self.result_show_window.add_row(result[0],result[1],result[2])
-            self.result_show_window.show()
-            self.hide()
+
+    def show_result(self):
+        # 显示结果窗口
+        self.compare_result.sort(key=lambda x: x[2], reverse=True)
+        for result in self.compare_result:
+            self.result_show_window.add_row(result[0], result[1], result[2])
+        self.result_show_window.show()
+        self.hide()

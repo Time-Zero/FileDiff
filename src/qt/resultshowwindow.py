@@ -19,7 +19,6 @@ class ResultShowWindow(QWidget):
         self.result_table_widget = None
         self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle('文档对比结果')
-        # self.setWindowFlags(Qt.SubWindow)
         self.initUI()
         self.hide()
 
