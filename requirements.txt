@@ -1,0 +1,4 @@
+pyqt5~=5.15.9
+scikit-learn~=1.5.2
+python-docx~=1.1.2
+pdfminer-six~=20240706
