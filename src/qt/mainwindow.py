@@ -1,11 +1,12 @@
 from threading import Thread
+
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, \
-    QStackedWidget
-from src.utils.util import *
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QStackedWidget, QLineEdit, QPushButton
+
+from src.file_process.fileread import *
 from src.qt.boxstyleprogressbar import *
 from src.qt.resultshowwindow import *
-from src.file_process.fileread import *
+from src.utils.util import *
 
 file_list = []              # 待处理的文件列表
 result_list = []

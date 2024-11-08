@@ -1,8 +1,9 @@
+from threading import Lock
+
 import win32com
 from docx import Document
 from pdfminer.high_level import extract_text
 from win32com.client import Dispatch
-from threading import Lock
 
 
 def read_docx(filename):

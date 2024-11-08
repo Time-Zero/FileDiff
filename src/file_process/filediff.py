@@ -1,6 +1,8 @@
+import difflib
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import difflib
+
 
 def calculate_similarity(base_file, compare_file):
     """
